@@ -1,0 +1,21 @@
+# Compiled Python files
+*.pyc
+
+# Virtual environment
+venv/
+
+# PyCharm project files
+.idea/
+
+# Editor-specific temporary files
+*~
+
+# Local development settings
+.env
+
+# Log files
+*.log
+
+# Dependency directories
+lib/
+libs/
