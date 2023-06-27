@@ -17,6 +17,7 @@ input_message_1 = os.getenv("INPUT_1")
 
 input_message_2 = os.getenv("INPUT_2")
 
+
 def parse_equipment_message(message_text):
     equipment_data = {
         'username': None,
@@ -215,18 +216,18 @@ username = parsed_equipment['username']
 user_equipment = get_user_items(username)
 #print("У пользователя:")
 #print(user_equipment)
-#print("парсинг сообщения")
-#print(parsed_equipment)
+print("парсинг сообщения")
+print(parsed_equipment)
 # Сравнение данных и вывод разницы
 
-print("не хватает:")
-print(compare_equipment_data(user_equipment, parsed_equipment))
+#print("не хватает:")
+#print(compare_equipment_data(user_equipment, parsed_equipment))
 
 missing_items = compare_equipment_data(user_equipment, parsed_equipment)
 #print(missing_items)
-main.add_equipment_to_glpi_user(missing_items)
+#main.add_equipment_to_glpi_user(missing_items)
 
-#user_equipment = get_user_items(username)
-print("после добавления:")
-print(user_equipment)
+user_equipment = get_user_items(username)
+#print("после добавления:")
+#print(user_equipment)
 
