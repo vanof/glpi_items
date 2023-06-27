@@ -1,9 +1,8 @@
-from glpi_api import GLPI
 import re
-from tabulate import tabulate
 import main
 import os
 from dotenv import load_dotenv
+from glpi_api import GLPI
 
 load_dotenv()
 
@@ -217,7 +216,9 @@ username = parsed_equipment['username']
 
 # Получение данных пользователя
 user_equipment = get_user_items(username)
+print("У пользователя:")
 print(user_equipment)
+print("парсинг сообщения")
 print(parsed_equipment)
 # Сравнение данных и вывод разницы
 
