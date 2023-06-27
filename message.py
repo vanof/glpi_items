@@ -18,6 +18,7 @@ input_message_1 = os.getenv("INPUT_1")
 input_message_2 = os.getenv("INPUT_2")
 
 
+# добавить usb концентраторы и debug
 def parse_equipment_message(message_text):
     equipment_data = {
         'username': None,
@@ -37,21 +38,22 @@ def parse_equipment_message(message_text):
         'ups': []
     }
 
+    # преобразование-обрезка полей
     field_patterns = {
-        'Системный блок': 'pc',
-        'Ноутбук': 'laptops',
-        'Сумка': 'bags',
-        'Зарядное устройство': 'chargers',
-        'Web камера': 'web',
-        'USB ключ': 'usb',
-        'Гарнитура': 'headset',
-        'Монитор': 'monitors',
-        'Мышка': 'mouse',
-        'Клавиатура': 'keyboard',
-        'Док-станция': 'dock_station',
-        'Внешний диск': 'external_hdd',
-        'Внешний CD-ROM': 'external_cd',
-        'ИБП': 'ups'
+        'Системный блок': ('pc', True),
+        'Ноутбук': ('laptops', True),
+        'Сумка': ('bags', False),
+        'Зарядное устройство': ('chargers', False),
+        'Веб-камера': ('web', False),
+        'USB ключ': ('usb', False),
+        'Гарнитура': ('headset', False),
+        'Монитор': ('monitors', True),
+        'Мышка': ('mouse', False),
+        'Клавиатура': ('keyboard', False),
+        'Док-станция': ('dock_station', False),
+        'Внешний диск': ('external_hdd', False),
+        'Внешний CD-ROM': ('external_cd', False),
+        'ИБП': ('ups', False)
     }
 
     username_start_index = message_text.find('"') + 1
@@ -59,11 +61,14 @@ def parse_equipment_message(message_text):
     username = message_text[username_start_index:username_end_index]
     equipment_data['username'] = username.strip()
 
-    for field, data_key in field_patterns.items():
+    for field, (data_key, requires_transform) in field_patterns.items():
         pattern = rf'{field} (.+)'
         matches = re.findall(pattern, message_text)
         if matches:
-            cleaned_matches = [match.strip() for match in matches]
+            if requires_transform:
+                cleaned_matches = [match.strip() for match in matches]
+            else:
+                cleaned_matches = [f'{field} {match.strip()}' for match in matches]
             equipment_data[data_key] = cleaned_matches
 
     return equipment_data
@@ -214,20 +219,20 @@ username = parsed_equipment['username']
 
 # Получение данных пользователя
 user_equipment = get_user_items(username)
-#print("У пользователя:")
-#print(user_equipment)
-print("парсинг сообщения")
-print(parsed_equipment)
+print("У пользователя:")
+print(user_equipment)
+#print("парсинг сообщения")
+#print(parsed_equipment)
 # Сравнение данных и вывод разницы
 
-#print("не хватает:")
-#print(compare_equipment_data(user_equipment, parsed_equipment))
+print("не хватает:")
+print(compare_equipment_data(user_equipment, parsed_equipment))
 
 missing_items = compare_equipment_data(user_equipment, parsed_equipment)
 #print(missing_items)
-#main.add_equipment_to_glpi_user(missing_items)
+main.add_equipment_to_glpi_user(missing_items)
 
 user_equipment = get_user_items(username)
-#print("после добавления:")
-#print(user_equipment)
+print("после добавления:")
+print(user_equipment)
 

@@ -85,7 +85,7 @@ def check_equipment(equipment_type, equipment_name, username, peripheral_type):
                                       'comment': 'bot: добавлен как периферия', 'peripheraltypes_id': peripheral_type,
                                       'entities_id': 0})
             print(f"{equipment_type} '{equipment_name}' added to peripheral GLPI.")
-            return equipment[0]['id']
+            return equipment[0]['id'] # тут ошибка! проверить
 
     glpi.add(equipment_type, {'name': equipment_name, 'contact': f"{username}"+os.getenv("DOMAIN"), 'comment': 'bot: добавлен', 'entities_id': 0})
     print(f"{equipment_type} '{equipment_name}' added to GLPI.")
