@@ -18,7 +18,6 @@ input_message_1 = os.getenv("INPUT_1")
 input_message_2 = os.getenv("INPUT_2")
 
 
-# добавить usb концентраторы и debug
 def parse_equipment_message(message_text):
     equipment_data = {
         'username': None,
@@ -27,7 +26,7 @@ def parse_equipment_message(message_text):
         'bags': [],
         'chargers': [],
         'web': [],
-        'usb': [],
+        'usb_key': [],
         'headset': [],
         'monitors': [],
         'mouse': [],
@@ -35,7 +34,8 @@ def parse_equipment_message(message_text):
         'dock_station': [],
         'external_hdd': [],
         'external_cd': [],
-        'ups': []
+        'ups': [],
+        'usb': [],
     }
 
     # преобразование-обрезка полей
@@ -45,7 +45,7 @@ def parse_equipment_message(message_text):
         'Сумка': ('bags', False),
         'Зарядное устройство': ('chargers', False),
         'Веб-камера': ('web', False),
-        'USB ключ': ('usb', False),
+        'USB ключ': ('usb_key', False),
         'Гарнитура': ('headset', False),
         'Монитор': ('monitors', True),
         'Мышка': ('mouse', False),
@@ -53,7 +53,8 @@ def parse_equipment_message(message_text):
         'Док-станция': ('dock_station', False),
         'Внешний диск': ('external_hdd', False),
         'Внешний CD-ROM': ('external_cd', False),
-        'ИБП': ('ups', False)
+        'ИБП': ('ups', False),
+        'USB концентратор': ('usb', False)
     }
 
     username_start_index = message_text.find('"') + 1
@@ -90,7 +91,7 @@ def get_user_items(username):
         'bags': [],
         'chargers': [],
         'web': [],
-        'usb': [],
+        'usb_key': [],
         'headset': [],
         'monitors': [],
         'mouse': [],
@@ -98,7 +99,8 @@ def get_user_items(username):
         'dock_station': [],
         'external_hdd': [],
         'external_cd': [],
-        'ups': []
+        'ups': [],
+        'usb': [],
     }
 
     peripheral_mapping = {
@@ -107,12 +109,13 @@ def get_user_items(username):
         3: 'bags',
         4: 'dock_station',
         5: 'external_hdd',
-        6: 'usb',
+        6: 'usb_key',
         7: 'headset',
         8: 'external_cd',
         9: 'ups',
         10: 'web',
-        11: 'chargers'
+        11: 'chargers',
+        12: 'usb'
     }
 
     try:
@@ -165,7 +168,7 @@ def compare_equipment_data(user_equipment, parsed_equipment):
         'bags': [],
         'chargers': [],
         'web': [],
-        'usb': [],
+        'usb_key': [],
         'headset': [],
         'monitors': [],
         'mouse': [],
@@ -173,7 +176,8 @@ def compare_equipment_data(user_equipment, parsed_equipment):
         'dock_station': [],
         'external_hdd': [],
         'external_cd': [],
-        'ups': []
+        'ups': [],
+        'usb': []
     }
 
     missing_items = {}
@@ -197,42 +201,26 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
     return equipment_data
 
+if main.DEBUG:
+    parsed_equipment = parse_equipment_message(input_message_1)
+    username = parsed_equipment['username']
 
-# добавление всего оборудования
-def add_equipment_to_glpi_user(missing_items):
-    if missing_items['pc']:
-        main.link_computer_to_user(missing_items['username'], missing_items['pc'][0])
-    #else:
-    #    print("No computers to add.")
+    # Получение данных пользователя
+    user_equipment = get_user_items(username)
+    #print("У пользователя:")
+    #print(user_equipment)
+    #print("парсинг сообщения")
+    #print(parsed_equipment)
+    # Сравнение данных и вывод разницы
 
-    if missing_items['laptops']:
-        main.link_computer_to_user(missing_items['username'], missing_items['laptops'][0])
+    print("не хватает:")
+    print(compare_equipment_data(user_equipment, parsed_equipment))
 
-    if missing_items['monitors']:
-        main.link_monitor_to_user(missing_items['username'], missing_items['monitors'][0])
+    missing_items = compare_equipment_data(user_equipment, parsed_equipment)
+    #print(missing_items)
+    main.add_equipment_to_glpi_user(missing_items)
 
-    # print(f"Equipment data added to user '{equipment_data['username']}' in GLPI.")
-
-
-parsed_equipment = parse_equipment_message(input_message_1)
-username = parsed_equipment['username']
-
-# Получение данных пользователя
-user_equipment = get_user_items(username)
-print("У пользователя:")
-print(user_equipment)
-#print("парсинг сообщения")
-#print(parsed_equipment)
-# Сравнение данных и вывод разницы
-
-print("не хватает:")
-print(compare_equipment_data(user_equipment, parsed_equipment))
-
-missing_items = compare_equipment_data(user_equipment, parsed_equipment)
-#print(missing_items)
-main.add_equipment_to_glpi_user(missing_items)
-
-user_equipment = get_user_items(username)
-print("после добавления:")
-print(user_equipment)
+    user_equipment = get_user_items(username)
+    print("после добавления:")
+    print(user_equipment)
 

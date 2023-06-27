@@ -1,3 +1,5 @@
+# файл с неиспользуемыми или тестируемыми функциями
+
 from glpi_api import GLPI
 from tabulate import tabulate
 import os
@@ -90,3 +92,51 @@ def add_computer_to_glpi(glpi):
     # Add the computer to GLPI
     glpi.add('Computer', computer_data)
     # print(f"Computer '{computer_name}' added to GLPI.")
+
+
+'''
+# добавление всего оборудования
+def add_equipment_to_glpi_user(missing_items):
+    if missing_items['pc']:
+        main.link_computer_to_user(missing_items['username'], missing_items['pc'][0])
+    #else:
+    #    print("No computers to add.")
+
+    if missing_items['laptops']:
+        main.link_computer_to_user(missing_items['username'], missing_items['laptops'][0])
+
+    if missing_items['monitors']:
+        main.link_monitor_to_user(missing_items['username'], missing_items['monitors'][0])
+
+    # print(f"Equipment data added to user '{equipment_data['username']}' in GLPI.")
+'''
+
+
+# проверяет, существует ли комп в glpi и добавляет его
+# возвращает id компа
+def check_computer(computer_name):
+    computer = glpi.get_all_items('Computer', searchText={'name':computer_name}, range={"0-1500"})
+    deleted_computer = glpi.get_all_items('Computer', searchText={'name':computer_name}, range={"0-1500"}, is_deleted=True)
+    # не найден пк
+    # if computer == 0 and deleted_computer == 0:
+
+    if deleted_computer:
+        # добавить проверку на дубли в deleted
+        print(f"Computer '{computer_name}' already exists in deleted in GLPI.")
+        #print(deleted_computer[0]['id'])
+        #print(deleted_computer[0]['name'])
+        #print(deleted_computer[0]['is_deleted'])
+        glpi.update('Computer', {'id': deleted_computer[0]['id'], 'comment': 'bot: восстановлен из удаленных, был у '+deleted_computer[0]['contact'], 'is_deleted': '0'})
+        #print(f"Computer '{computer_name}' восстановлен")
+        return deleted_computer[0]['id']
+
+    if computer:
+        print(f"Computer '{computer_name}' already exists in GLPI.")
+        # возможно надо перенести в другую функцию
+        glpi.update('Computer', {'id': computer[0]['id'], 'comment': 'bot: обновлен, был у ' + computer[0]['contact']})
+        return computer[0]['id']
+
+    glpi.add('Computer', {'name': computer_name, 'comment': 'bot: добавлен', 'entities_id': 0})
+    print(f"Computer '{computer_name}' added to GLPI.")
+    computer = glpi.get_all_items('Computer', searchText={'name': computer_name}, range={"0-1500"})
+    return computer[0]['id']
