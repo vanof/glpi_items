@@ -205,9 +205,6 @@ def add_equipment_to_glpi_user(missing_items):
     if missing_items['monitors']:
         main.link_monitor_to_user(missing_items['username'], missing_items['monitors'][0])
 
-
-
-
     # print(f"Equipment data added to user '{equipment_data['username']}' in GLPI.")
 
 
@@ -216,20 +213,20 @@ username = parsed_equipment['username']
 
 # Получение данных пользователя
 user_equipment = get_user_items(username)
-print("У пользователя:")
-print(user_equipment)
-print("парсинг сообщения")
-print(parsed_equipment)
+#print("У пользователя:")
+#print(user_equipment)
+#print("парсинг сообщения")
+#print(parsed_equipment)
 # Сравнение данных и вывод разницы
 
 print("не хватает:")
 print(compare_equipment_data(user_equipment, parsed_equipment))
 
 missing_items = compare_equipment_data(user_equipment, parsed_equipment)
-
+#print(missing_items)
 main.add_equipment_to_glpi_user(missing_items)
 
-user_equipment = get_user_items(username)
+#user_equipment = get_user_items(username)
 print("после добавления:")
 print(user_equipment)
 

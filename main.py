@@ -67,38 +67,66 @@ def check_computer(computer_name):
     return computer[0]['id']
 
 
-def check_equipment(equipment_type, equipment_name, username):
+peripheral_mapping = {
+    1: 'keyboard',
+    2: 'mouse',
+    3: 'bags',
+    4: 'dock_station',
+    5: 'external_hdd',
+    6: 'usb',
+    7: 'headset',
+    8: 'external_cd',
+    9: 'ups',
+    10: 'web',
+    11: 'chargers'
+}
+
+
+# проверяет, существует ли оборудование в GLPI
+# восстанавливает из удаленных
+# добавляет если не существует
+def check_equipment(equipment_type, equipment_name, username, peripheral_type):
     if equipment_type not in ['Computer', 'Monitor', 'Peripheral']:
         print(f"Invalid equipment type: {equipment_type}")
         return None
 
+    print(peripheral_type)
     search_params = {'name': equipment_name}
     equipment = glpi.get_all_items(equipment_type, searchText=search_params, range={"0-1500"})
-
+    print("1:", equipment_type)
     for item in equipment:
         if item['contact'] == f"{username}"+os.getenv("DOMAIN"):
             print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI.")
             return item['id']
-
+    print("2:", equipment_type)
     deleted_equipment = glpi.get_all_items(equipment_type, searchText=search_params, range={"0-1500"}, is_deleted=True)
     if deleted_equipment:
         print(f"{equipment_type} '{equipment_name}' already exists in deleted in GLPI.")
         glpi.update(equipment_type, {'id': deleted_equipment[0]['id'], 'comment': 'bot: восстановлен из удаленных, был у ' + deleted_equipment[0]['contact'], 'is_deleted': '0'})
         return deleted_equipment[0]['id']
 
+    print("3:", equipment_type)
+    # вот тут нужно добавление различных параметров
+    if equipment_type == 'Peripheral':
+        peripheral_type = peripheral_mapping.get(equipment_name.lower())
+        print(peripheral_type)
+        if peripheral_type is not None:
+            glpi.add(equipment_type, {'name': equipment_name, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                      'comment': 'bot: добавлен как переферия', 'peripheraltypes_id': peripheral_type,
+                                      'entities_id': 0})
+            print(f"{equipment_type} '{equipment_name}' added to peripheral GLPI.")
+            return equipment[0]['id']
+
     glpi.add(equipment_type, {'name': equipment_name, 'contact': f"{username}"+os.getenv("DOMAIN"), 'comment': 'bot: добавлен', 'entities_id': 0})
     print(f"{equipment_type} '{equipment_name}' added to GLPI.")
     equipment = glpi.get_all_items(equipment_type, searchText=search_params, range={"0-500"})
     return equipment[0]['id']
 
-    glpi.add(equipment_type, {'name': equipment_name, 'contact': f"{username}" + os.getenv("DOMAIN"), 'comment': 'bot: добавлен', 'entities_id': 0})
-    print(f"{equipment_type} '{equipment_name}' added to GLPI.")
-    equipment = glpi.get_all_items(equipment_type, searchText=search_params, range={"0-500"})
-    return equipment[0]['id']
 
-
-def link_equipment(equipment_type, username, equipment_name):
-    equipment_id = check_equipment(equipment_type, equipment_name, username)
+# привязывает оборудование к пользователю
+# через поля контактое лицо и Пользователь
+def link_equipment(equipment_type, username, equipment_name, peripheral_type=None):
+    equipment_id = check_equipment(equipment_type, equipment_name, username, peripheral_type)
 
     if equipment_id:
         if equipment_type == 'Computer':
@@ -135,9 +163,30 @@ def add_equipment_to_glpi_user(missing_items):
         'ups': 'Peripheral'
     }
 
+    peripheral_mapping = {
+        1: 'keyboard',
+        2: 'mouse',
+        3: 'bags',
+        4: 'dock_station',
+        5: 'external_hdd',
+        6: 'usb',
+        7: 'headset',
+        8: 'external_cd',
+        9: 'ups',
+        10: 'web',
+        11: 'chargers'
+    }
+
     for equipment_type, glpi_equipment_type in equipment_types.items():
         if missing_items[equipment_type]:
             for equipment_name in missing_items[equipment_type]:
-                link_equipment(glpi_equipment_type, username, equipment_name)
+                if glpi_equipment_type == 'Peripheral':
+                    peripheral_type = peripheral_mapping.get(equipment_name.lower())
+                    if peripheral_type is not None:
+                        link_equipment(glpi_equipment_type, username, equipment_name, peripheral_type)
+                    else:
+                        print(f"Invalid peripheral type: {equipment_name}")
+                else:
+                    link_equipment(glpi_equipment_type, username, equipment_name)
 
 
