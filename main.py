@@ -31,10 +31,9 @@ def check_equipment(equipment_type, equipment_name, username, peripheral_type):
     if equipment_type not in ['Computer', 'Monitor', 'Peripheral']:
         print(f"Invalid equipment type: {equipment_type}")
         return None
-    print(equipment_name)
+
     search_params = {'name': equipment_name}
     equipment = glpi.get_all_items(equipment_type, searchText=search_params, range={"0-1500"})
-    print((equipment))
     for item in equipment:
         if item['contact'] == f"{username}"+os.getenv("DOMAIN"):
             print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI.")
