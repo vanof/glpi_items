@@ -2,8 +2,6 @@ import os
 from glpi_api import GLPI
 from dotenv import load_dotenv
 
-
-
 load_dotenv()
 
 # GLPI API configuration
