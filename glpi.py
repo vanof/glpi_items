@@ -73,8 +73,7 @@ def get_user_items(username):
             all_peripherals = glpi_connect.get_all_items(itemtype="Peripheral", range={"0-2500"})
 
             for computer in all_computers:
-                if computer['name'].startswith((os.getenv("PC_MASK"), os.getenv("NB_MASK"))) and computer[
-                    'users_id'] == user_id:
+                if computer['name'].startswith((os.getenv("PC_MASK"), os.getenv("NB_MASK"))) and computer['users_id'] == user_id:
                     if computer['name'].startswith(os.getenv("PC_MASK")):
                         equipment_data['pc'].append(computer['name'])
                     elif computer['name'].startswith(os.getenv("NB_MASK")):
