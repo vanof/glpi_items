@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEBUG = True
+DEBUG = os.getenv("DEBUG")
 
 input_message_1 = os.getenv("INPUT_1")
 input_message_2 = os.getenv("INPUT_2")
@@ -38,7 +38,7 @@ def parse_equipment_message(message_text):
     username = message_text[username_start_index:username_end_index]
     equipment_data['username'] = username.strip()
 
-    if 'получил' in message_text:
+    if 'получил' in message_text or 'выдано' in message_text:
         equipment_data['type'] = 1
     elif 'сдал' in message_text:
         equipment_data['type'] = 0
@@ -87,7 +87,7 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
 if DEBUG:
     # Парсинг сообщения
-    parsed_equipment = parse_equipment_message(input_message_2)
+    parsed_equipment = parse_equipment_message(input_message_1)
     username = parsed_equipment['username']
     print("парсинг сообщения")
     print(parsed_equipment)
@@ -97,21 +97,17 @@ if DEBUG:
     print("У пользователя:")
     print(user_equipment)
 
-
     # Сравнение данных и вывод разницы
     missing_items = compare_equipment_data(user_equipment, parsed_equipment)
     print("не хватает:")
     print(missing_items)
 
     # Обновление оборудования
-    #glpi.update_equipment(missing_items)
+    #glpi.update_equipment(compare_equipment_data(user_equipment, parsed_equipment))
 
+    # Удаление
     glpi.update_equipment(parsed_equipment)
 
     user_equipment = glpi.get_user_items(username)
     print("после обновления:")
     print(user_equipment)
-
-
-
-
