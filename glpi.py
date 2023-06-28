@@ -13,7 +13,6 @@ glpi_connect = GLPI(url=base_url, apptoken=app_token, auth=user_token)
 
 
 # получение id пользователя
-# нужна функция наоборот
 def get_user_id_by_username(username):
     users = glpi_connect.get_all_items(itemtype="User")
     found_users = [user for user in users if user['name'] == username]
