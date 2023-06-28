@@ -65,14 +65,17 @@ def get_computer(name):
             item['id'],
             item['name'],
             item['contact'],
-            item['is_deleted']
+            item['users_id'],
+            item['is_deleted'],
+            item['comment']
         ]
         table.append(table_row)
 
     # Print the filtered data in a table format
-    headers = ['Position', 'id', 'name', 'contact', 'is_deleted']
+    headers = ['Position', 'id', 'name', 'contact', 'user_id', 'is_deleted', 'comment']
     print(tabulate(table, headers, tablefmt='grid'))
 
+get_computer('pc-apx-004')
 
 # прототип для тестирования API
 def add_computer_to_glpi(glpi):

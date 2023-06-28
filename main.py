@@ -37,12 +37,12 @@ def parse_equipment_message(message_text):
     username_end_index = message_text.find('"', username_start_index)
     username = message_text[username_start_index:username_end_index]
     equipment_data['username'] = username.strip()
-    #'''
+
     if 'получил' in message_text:
         equipment_data['type'] = 1
     elif 'сдал' in message_text:
         equipment_data['type'] = 0
-    #'''
+
     for field, (data_key, requires_transform) in field_patterns.items():
         pattern = rf'{field} (.+)'
         matches = re.findall(pattern, message_text)
@@ -58,11 +58,14 @@ def parse_equipment_message(message_text):
 
 def compare_equipment_data(user_equipment, parsed_equipment):
     equipment_data = glpi.initialize_equipment_data()
+
     missing_items = {}
 
     # Compare each item type in parsed_equipment
     for item_type, item_list in parsed_equipment.items():
         if isinstance(item_list, int):
+            if item_type == 'type':
+                equipment_data['type'] = item_list
             continue  # Пропустить поле, если тип данных является int
         if item_type not in user_equipment:
             missing_items[item_type] = item_list
@@ -83,24 +86,32 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
 
 if DEBUG:
-    parsed_equipment = parse_equipment_message(input_message_1)
+    # Парсинг сообщения
+    parsed_equipment = parse_equipment_message(input_message_2)
     username = parsed_equipment['username']
+    print("парсинг сообщения")
     print(parsed_equipment)
+
     # Получение данных пользователя
     user_equipment = glpi.get_user_items(username)
     print("У пользователя:")
     print(user_equipment)
-    #print("парсинг сообщения")
-    #print(parsed_equipment)
+
 
     # Сравнение данных и вывод разницы
-    print("не хватает:")
-    print(compare_equipment_data(user_equipment, parsed_equipment))
     missing_items = compare_equipment_data(user_equipment, parsed_equipment)
-    #print(missing_items)
-    glpi.add_equipment_to_glpi_user(missing_items)
+    print("не хватает:")
+    print(missing_items)
+
+    # Обновление оборудования
+    #glpi.update_equipment(missing_items)
+
+    glpi.update_equipment(parsed_equipment)
 
     user_equipment = glpi.get_user_items(username)
-    print("после добавления:")
+    print("после обновления:")
     print(user_equipment)
+
+
+
 
