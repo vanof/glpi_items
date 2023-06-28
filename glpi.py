@@ -11,7 +11,6 @@ user_token = os.getenv("USER_TOKEN")
 
 glpi_connect = GLPI(url=base_url, apptoken=app_token, auth=user_token)
 
-DEBUG = os.getenv("DEBUG")
 
 def initialize_equipment_data():
     return {
@@ -74,7 +73,8 @@ def get_user_items(username):
             all_peripherals = glpi_connect.get_all_items(itemtype="Peripheral", range={"0-2500"})
 
             for computer in all_computers:
-                if computer['name'].startswith((os.getenv("PC_MASK"), os.getenv("NB_MASK"))) and computer['users_id'] == user_id:
+                if computer['name'].startswith((os.getenv("PC_MASK"), os.getenv("NB_MASK"))) and computer[
+                    'users_id'] == user_id:
                     if computer['name'].startswith(os.getenv("PC_MASK")):
                         equipment_data['pc'].append(computer['name'])
                     elif computer['name'].startswith(os.getenv("NB_MASK")):
@@ -92,7 +92,7 @@ def get_user_items(username):
             if equipment_data:
                 response = f"User ID: {user_id}\n"
                 response += f"Assets for user '{username}':\n{equipment_data}"
-                #print(response)
+                # print(response)
             else:
                 print(f"No assets found for user '{username}'.")
         else:
@@ -104,15 +104,70 @@ def get_user_items(username):
         print(f"GLPI API error: {str(e)}")
 
 
-# проверяет, существует ли оборудование в GLPI
-# восстанавливает из удаленных
-# добавляет, если не существует
+'''
+проверяет, существует ли оборудование в GLPI
+может быть несколько случаев:
+1) полное совпадение поиского запроса с именем, контактом, ид пользователя - проверка не нужна, выполняается ранее
+2) совпадение по имени и контакту
+3) совпадение по имени и ид пользователя - проверка не нужна, выполняается ранее
+4) совпадение только по имени оборудования
+5) отсутствие оборудование и его добавление.
+# При таком запросе возвращает "имя оборудование + (копия)", нужен фильтр
+'''
+
+
 def check_equipment(equipment_type, username, equipment_name, peripheral_type):
     if equipment_type not in ['Computer', 'Monitor', 'Peripheral']:
         print(f"Invalid equipment type: {equipment_type}")
         return None
 
-    # При таком запросе возвращает "имя оборудование + (копия)", нужен фильтр
+    search_params = {'name': equipment_name, 'contact': username}
+    equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"})
+    deleted_equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"}, is_deleted=True)
+
+    if equipment:
+        print(f"{equipment_type} '{equipment_name}' already exists with correct contact in GLPI.")
+        return equipment[0]['id']
+    elif deleted_equipment:
+        print(f"{equipment_type} '{equipment_name}' already exists with correct contact in deleted items in GLPI. Restoring...")
+        glpi_connect.update(equipment_type, {'id': deleted_equipment[0]['id'],
+                                             'comment': 'bot: восстановлен из удаленных, был у ' + username,
+                                             'is_deleted': '0'})
+        return deleted_equipment[0]['id']
+
+    search_params = {'name': equipment_name}
+    equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"})
+    deleted_equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"}, is_deleted=True)
+
+    if equipment:
+        print(f"{equipment_type} '{equipment_name}' already exists in GLPI.")
+        return equipment[0]['id']
+    elif deleted_equipment:
+        print(f"{equipment_type} '{equipment_name}' already exists in deleted items in GLPI.")
+        glpi_connect.update(equipment_type, {'id': deleted_equipment[0]['id'],
+                                             'comment': 'bot: восстановлен из удаленных, был у ' + username,
+                                             'is_deleted': '0'})
+        return deleted_equipment[0]['id']
+
+    if equipment_type == 'Peripheral' and peripheral_type is not None:
+        res = glpi_connect.add(equipment_type, {'name': equipment_name, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                                'comment': 'bot: добавлен как периферия',
+                                                'peripheraltypes_id': peripheral_type,
+                                                'entities_id': 0})
+        print(f"{equipment_type} '{equipment_name}' peripheral added to GLPI.")
+        return res[0]['id']
+    else:
+        res = glpi_connect.add(equipment_type, {'name': equipment_name, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                                'comment': 'bot: добавлен', 'entities_id': 0})
+        print(f"{equipment_type} '{equipment_name}' added to GLPI.")
+        return res[0]['id']
+
+
+def check_equipment_unlink(equipment_type, username, equipment_name, peripheral_type):
+    if equipment_type not in ['Computer', 'Monitor', 'Peripheral']:
+        print(f"Invalid equipment type: {equipment_type}")
+        return None
+
     search_params = {'name': equipment_name, 'contact': username, 'users_id': get_user_id_by_username(username)}
     equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"})
 
@@ -120,38 +175,23 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type):
         print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI.")
         return item['id']
 
-    deleted_equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"}, is_deleted=True)  #тут можно упростить границы поиска
-    if deleted_equipment:
-        print(f"{equipment_type} '{equipment_name}' already exists in deleted in GLPI.")
-        glpi_connect.update(equipment_type, {'id': deleted_equipment[0]['id'], 'comment': 'bot: восстановлен из удаленных, был у ' + username, 'is_deleted': '0'})
-        return deleted_equipment[0]['id']
-
-    if equipment_type == 'Peripheral':
-        if peripheral_type is not None:
-            res = glpi_connect.add(equipment_type, {'name': equipment_name, 'contact': f"{username}" + os.getenv("DOMAIN"),
-                                      'comment': 'bot: добавлен как периферия',
-                                      'peripheraltypes_id': peripheral_type,
-                                      'entities_id': 0})
-            print(f"{equipment_type} '{equipment_name}' peripheral added to GLPI.")
-            return res[0]['id']
-
-    res = glpi_connect.add(equipment_type, {'name': equipment_name, 'contact': f"{username}" + os.getenv("DOMAIN"), 'comment': 'bot: добавлен', 'entities_id': 0})
-    print(f"{equipment_type} '{equipment_name}' added to GLPI.")
-    return res[0]['id']
-
 
 # привязывает оборудование к пользователю
 # через поля контактое лицо и Пользователь
-#link_equipment(glpi_equipment_type, username, equipment_name)
+# link_equipment(glpi_equipment_type, username, equipment_name)
 def link_equipment(equipment_type, username, equipment_name, peripheral_type=None):
     equipment_id = check_equipment(equipment_type, username, equipment_name, peripheral_type)
     if equipment_id:
         if equipment_type == 'Computer':
-            glpi_connect.update('Computer', {'id': equipment_id, 'contact': f"{username}"+os.getenv("DOMAIN"), 'users_id': get_user_id_by_username(username)})
+            glpi_connect.update('Computer', {'id': equipment_id, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                             'users_id': get_user_id_by_username(username)})
         elif equipment_type == 'Monitor':
-            glpi_connect.update('Monitor', {'id': equipment_id, 'contact': f"{username}"+os.getenv("DOMAIN"), 'users_id': get_user_id_by_username(username)})
+            glpi_connect.update('Monitor', {'id': equipment_id, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                            'users_id': get_user_id_by_username(username)})
         elif equipment_type == 'Peripheral':
-            glpi_connect.update('Peripheral', {'id': equipment_id, 'contact': f"{username}"+os.getenv("DOMAIN"), 'users_id': get_user_id_by_username(username), 'peripheraltypes_id': peripheral_type})
+            glpi_connect.update('Peripheral', {'id': equipment_id, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                               'users_id': get_user_id_by_username(username),
+                                               'peripheraltypes_id': peripheral_type})
         else:
             print(f"Invalid equipment type: {equipment_type}")
     else:
@@ -159,15 +199,18 @@ def link_equipment(equipment_type, username, equipment_name, peripheral_type=Non
 
 
 def unlink_equipment(equipment_type, username, equipment_name, peripheral_type=None):
-    equipment_id = check_equipment(equipment_type, username, equipment_name, peripheral_type)
+    equipment_id = check_equipment_unlink(equipment_type, username, equipment_name, peripheral_type)
 
     if equipment_id:
         if equipment_type == 'Computer':
-            glpi_connect.update('Computer', {'id': equipment_id, 'contact': '', 'users_id': '0', 'comment': 'bot: откреплен от ' + username})
+            glpi_connect.update('Computer', {'id': equipment_id, 'contact': '', 'users_id': '0',
+                                             'comment': 'bot: откреплен от ' + username})
         elif equipment_type == 'Monitor':
-            glpi_connect.update('Monitor', {'id': equipment_id, 'contact': '', 'users_id': '0', 'comment': 'bot: откреплен от ' + username})
+            glpi_connect.update('Monitor', {'id': equipment_id, 'contact': '', 'users_id': '0',
+                                            'comment': 'bot: откреплен от ' + username})
         elif equipment_type == 'Peripheral':
-            glpi_connect.update('Peripheral', {'id': equipment_id, 'contact': '', 'users_id': '0', 'comment': 'bot: откреплен от ' + username})
+            glpi_connect.update('Peripheral', {'id': equipment_id, 'contact': '', 'users_id': '0',
+                                               'comment': 'bot: откреплен от ' + username})
         else:
             print(f"Invalid equipment type: {equipment_type}")
     else:

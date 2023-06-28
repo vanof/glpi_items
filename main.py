@@ -86,8 +86,9 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
 
 if DEBUG:
+    Delete = True
     # Парсинг сообщения
-    parsed_equipment = parse_equipment_message(input_message_1)
+    parsed_equipment = parse_equipment_message(input_message_2 if Delete else input_message_1)
     username = parsed_equipment['username']
     print("парсинг сообщения")
     print(parsed_equipment)
@@ -97,17 +98,22 @@ if DEBUG:
     print("У пользователя:")
     print(user_equipment)
 
-    # Сравнение данных и вывод разницы
-    missing_items = compare_equipment_data(user_equipment, parsed_equipment)
-    print("не хватает:")
-    print(missing_items)
+    if Delete:
+        # Удаление
+        glpi.update_equipment(parsed_equipment)
 
-    # Обновление оборудования
-    #glpi.update_equipment(compare_equipment_data(user_equipment, parsed_equipment))
+        user_equipment = glpi.get_user_items(username)
+        print("после удаления:")
+        print(user_equipment)
+    else:
+        # Сравнение данных и вывод разницы
+        missing_items = compare_equipment_data(user_equipment, parsed_equipment)
+        print("не хватает:")
+        print(missing_items)
 
-    # Удаление
-    glpi.update_equipment(parsed_equipment)
+        # Обновление оборудования
+        glpi.update_equipment(compare_equipment_data(user_equipment, parsed_equipment))
 
-    user_equipment = glpi.get_user_items(username)
-    print("после обновления:")
-    print(user_equipment)
+        user_equipment = glpi.get_user_items(username)
+        print("после обновления:")
+        print(user_equipment)
