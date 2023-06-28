@@ -2,48 +2,17 @@ import re
 import glpi
 import os
 from dotenv import load_dotenv
-from glpi_api import GLPI
 
 load_dotenv()
 
 DEBUG = True
 
-# GLPI API configuration
-base_url = os.getenv("BASE_URL")
-app_token = os.getenv("APP_TOKEN")
-user_token = os.getenv("USER_TOKEN")
-
-glpi_connect = GLPI(url=base_url, apptoken=app_token, auth=user_token)
-
 input_message_1 = os.getenv("INPUT_1")
-
 input_message_2 = os.getenv("INPUT_2")
 
 
-def initialize_equipment_data():
-    return {
-        'username': None,
-        'type': None,
-        'pc': [],
-        'laptops': [],
-        'bags': [],
-        'chargers': [],
-        'web': [],
-        'usb_key': [],
-        'headset': [],
-        'monitors': [],
-        'mouse': [],
-        'keyboard': [],
-        'dock_station': [],
-        'external_hdd': [],
-        'external_cd': [],
-        'ups': [],
-        'usb': [],
-    }
-
-
 def parse_equipment_message(message_text):
-    equipment_data = initialize_equipment_data()
+    equipment_data = glpi.initialize_equipment_data()
 
     # преобразование-обрезка полей
     field_patterns = {
@@ -68,7 +37,12 @@ def parse_equipment_message(message_text):
     username_end_index = message_text.find('"', username_start_index)
     username = message_text[username_start_index:username_end_index]
     equipment_data['username'] = username.strip()
-
+    #'''
+    if 'получил' in message_text:
+        equipment_data['type'] = 1
+    elif 'сдал' in message_text:
+        equipment_data['type'] = 0
+    #'''
     for field, (data_key, requires_transform) in field_patterns.items():
         pattern = rf'{field} (.+)'
         matches = re.findall(pattern, message_text)
@@ -82,80 +56,14 @@ def parse_equipment_message(message_text):
     return equipment_data
 
 
-def get_user_id_by_username(username):
-    users = glpi_connect.get_all_items(itemtype="User")
-    found_users = [user for user in users if user['name'] == username]
-    if found_users:
-        return found_users[0]['id']
-    return None
-
-
-def get_user_items(username):
-    equipment_data = initialize_equipment_data()
-
-    peripheral_mapping = {
-        1: 'keyboard',
-        2: 'mouse',
-        3: 'bags',
-        4: 'dock_station',
-        5: 'external_hdd',
-        6: 'usb_key',
-        7: 'headset',
-        8: 'external_cd',
-        9: 'ups',
-        10: 'web',
-        11: 'chargers',
-        12: 'usb'
-    }
-
-    try:
-        username = username.strip()
-        user_id = get_user_id_by_username(username)
-
-        if user_id:
-            equipment_data['username'] = username
-
-            all_computers = glpi_connect.get_all_items(itemtype="Computer", range={"0-1500"})
-            monitors = glpi_connect.get_all_items(itemtype="Monitor", range={"0-500"})
-            all_peripherals = glpi_connect.get_all_items(itemtype="Peripheral", range={"0-2500"})
-
-            for computer in all_computers:
-                if computer['name'].startswith(('pc-apx-', 'nb-apx-')) and computer['users_id'] == user_id:
-                    if computer['name'].startswith('pc-apx-'):
-                        equipment_data['pc'].append(computer['name'])
-                    elif computer['name'].startswith('nb-apx-'):
-                        equipment_data['laptops'].append(computer['name'])
-
-            user_monitors = [monitor['name'] for monitor in monitors if monitor['users_id'] == user_id]
-            equipment_data['monitors'] = user_monitors
-
-            for peripheral in all_peripherals:
-                peripheraltypes_id = peripheral['peripheraltypes_id']
-                if peripheraltypes_id in peripheral_mapping and peripheral['users_id'] == user_id:
-                    key = peripheral_mapping[peripheraltypes_id]
-                    equipment_data[key].append(peripheral['name'])
-
-            if equipment_data:
-                response = f"User ID: {user_id}\n"
-                response += f"Assets for user '{username}':\n{equipment_data}"
-                #print(response)
-            else:
-                print(f"No assets found for user '{username}'.")
-        else:
-            print(f"No user found with the username '{username}'.")
-
-        return equipment_data
-
-    except Exception as e:
-        print(f"GLPI API error: {str(e)}")
-
-
 def compare_equipment_data(user_equipment, parsed_equipment):
-    equipment_data = initialize_equipment_data()
+    equipment_data = glpi.initialize_equipment_data()
     missing_items = {}
 
     # Compare each item type in parsed_equipment
     for item_type, item_list in parsed_equipment.items():
+        if isinstance(item_list, int):
+            continue  # Пропустить поле, если тип данных является int
         if item_type not in user_equipment:
             missing_items[item_type] = item_list
         else:
@@ -173,26 +81,26 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
     return equipment_data
 
+
 if DEBUG:
     parsed_equipment = parse_equipment_message(input_message_1)
     username = parsed_equipment['username']
-
+    print(parsed_equipment)
     # Получение данных пользователя
-    user_equipment = get_user_items(username)
+    user_equipment = glpi.get_user_items(username)
     print("У пользователя:")
     print(user_equipment)
     #print("парсинг сообщения")
     #print(parsed_equipment)
-    # Сравнение данных и вывод разницы
 
+    # Сравнение данных и вывод разницы
     print("не хватает:")
     print(compare_equipment_data(user_equipment, parsed_equipment))
-
     missing_items = compare_equipment_data(user_equipment, parsed_equipment)
     #print(missing_items)
     glpi.add_equipment_to_glpi_user(missing_items)
 
-    user_equipment = get_user_items(username)
+    user_equipment = glpi.get_user_items(username)
     print("после добавления:")
     print(user_equipment)
 
