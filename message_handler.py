@@ -1,19 +1,28 @@
 import re
 import glpi
 import os
+import logging
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv('env.env')
 
+# для локального тестирования
 #input_message_1 = os.getenv("INPUT_1")
-input_message_1 = ''
-input_message_2 = os.getenv("INPUT_2")
-input = ''
+#input_message_2 = os.getenv("INPUT_2")
+
+
+def log_print(*args, **kwargs):
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    message = ' '.join(map(str, args))
+    logging.info(f'{message}')
+    print(message, **kwargs)
 
 
 def capitalize_name(name):
     capitalized_parts = [part.capitalize() for part in name.split(".")]
     return ".".join(capitalized_parts)
+
 
 def parse_equipment_message(message_text):
     equipment_data = glpi.initialize_equipment_data()
@@ -111,35 +120,38 @@ def compare_equipment_data(user_equipment, parsed_equipment):
     return equipment_data
 
 
-def go():
-    Delete = False
+def message_handler(input_message):
     # Парсинг сообщения
-    parsed_equipment = parse_equipment_message(input_message_2 if Delete else input_message_1)
+    parsed_equipment = parse_equipment_message(input_message)
     username = parsed_equipment['username']
-    print("парсинг сообщения")
-    print(parsed_equipment)
+    type = parsed_equipment['type']
+    log_print("==================================================================================================================================================================================")
+    log_print("парсинг сообщения:")
+    log_print(parsed_equipment)
 
     # Получение данных пользователя
     user_equipment = glpi.get_user_items(username)
-    print("У пользователя:")
-    print(user_equipment)
+    log_print("У пользователя:")
+    log_print(user_equipment)
 
-    if Delete:
+    if type == 0:
         # Удаление
         glpi.update_equipment(parsed_equipment)
 
         user_equipment = glpi.get_user_items(username)
-        print("после удаления:")
-        print(user_equipment)
+        log_print("после удаления:")
+        log_print(user_equipment)
+        log_print("==================================================================================================================================================================================")
     else:
         # Сравнение данных и вывод разницы
         missing_items = compare_equipment_data(user_equipment, parsed_equipment)
-        print("не хватает:")
-        print(missing_items)
+        log_print("не хватает:")
+        log_print(missing_items)
 
         # Обновление оборудования
         glpi.update_equipment(compare_equipment_data(user_equipment, parsed_equipment))
 
         user_equipment = glpi.get_user_items(username)
-        print("после обновления:")
-        print(user_equipment)
+        log_print("после обновления:")
+        log_print(user_equipment)
+        log_print("==================================================================================================================================================================================")
