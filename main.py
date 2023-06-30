@@ -3,7 +3,7 @@ import glpi
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv('env.env')
 
 DEBUG = os.getenv("DEBUG")
 
@@ -84,9 +84,10 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
     return equipment_data
 
+input_message = ''
 
 if DEBUG:
-    Delete = True
+    Delete = False
     # Парсинг сообщения
     parsed_equipment = parse_equipment_message(input_message_2 if Delete else input_message_1)
     username = parsed_equipment['username']

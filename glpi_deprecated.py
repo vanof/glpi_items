@@ -107,7 +107,7 @@ def add_computer_to_glpi(glpi):
     computer_name = 'pc-apx-004'
 
     # Check if the computer already exists
-    # добавить в .env маски имен
+    # добавить в env.env маски имен
     existing_computers = glpi_connect.get_all_items(itemtype='Computer', search={'contact': 'pc-vdi-110'}, range={"0-500"})
     print(existing_computers)
     if existing_computers:

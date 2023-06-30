@@ -2,7 +2,7 @@ import os
 from glpi_api import GLPI
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv('env.env')
 
 # GLPI API configuration
 base_url = os.getenv("BASE_URL")

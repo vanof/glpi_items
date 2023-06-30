@@ -11,7 +11,7 @@ venv/
 *~
 
 # Local development settings
-.env
+env.env
 
 # Log files
 *.log
