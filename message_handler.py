@@ -3,7 +3,6 @@ import glpi
 import os
 import logging
 from dotenv import load_dotenv
-from datetime import datetime
 
 load_dotenv('env.env')
 
@@ -13,7 +12,6 @@ load_dotenv('env.env')
 
 
 def log_print(*args, **kwargs):
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     message = ' '.join(map(str, args))
     logging.info(f'{message}')
     print(message, **kwargs)

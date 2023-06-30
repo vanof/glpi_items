@@ -5,14 +5,14 @@ from tabulate import tabulate
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv('env.env')
 
 # GLPI API configuration
-base_url = os.getenv("BASE_URL")
+glpi_url = os.getenv("GLPI_URL")
 app_token = os.getenv("APP_TOKEN")
 user_token = os.getenv("USER_TOKEN")
 
-glpi_connect = GLPI(url=base_url, apptoken=app_token, auth=user_token)
+glpi_connect = GLPI(url=glpi_url, apptoken=app_token, auth=user_token)
 
 
 def get_user_id_by_username(username):
@@ -98,7 +98,16 @@ def get_computer(name):
 
     # Print the filtered data in a table format
     headers = ['Position', 'id', 'name', 'contact', 'user_id', 'is_deleted', 'comment']
-    print(tabulate(table, headers, tablefmt='grid'))
+    # print(tabulate(table, headers, tablefmt='grid'))
+    return computer
+
+
+def get_computer_info(id):
+    computer = glpi_connect.get_item('Computer', id, with_logs=True)
+    print(computer)
+
+
+get_computer_info(280)
 
 
 # проверяет, существует ли комп в glpi и добавляет его

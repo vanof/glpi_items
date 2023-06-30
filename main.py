@@ -1,5 +1,7 @@
 import telebot
 import os
+
+import glpi_deprecated
 import message_handler
 import logging
 from dotenv import load_dotenv
@@ -23,6 +25,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
+# повышает уровень лога для коннектов с glpi и telegram
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 
 
@@ -33,20 +36,39 @@ def handle_start(message):
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
-    if message.text == "Получить характеристики ПК":
-        bot.send_message(message.chat.id, "Вы выбрали получение характеристик")
-        bot.send_message(message.chat.id, "Отправь мне сообщение, которое нужно передать в GLPI или выбери действие:",
-                         reply_markup=keyboard)
+    if message.text == "Получить характеристики компьютера":
+        bot.send_message(message.chat.id, "Введи имя компьютера:")
+        bot.register_next_step_handler(message, get_computer_characteristics)
 
     elif message.text == "Сгенерировать QR":
         bot.send_message(message.chat.id, "Вы выбрали генерацию QR")
-        bot.send_message(message.chat.id, "Отправь мне сообщение, которое нужно передать в GLPI или выбери действие:",
-                         reply_markup=keyboard)
+        bot.send_message(message.chat.id, "Отправь мне сообщение, которое нужно передать в GLPI или выбери действие:", reply_markup=keyboard)
 
     else:
         message_handler.message_handler(message.text)
         bot.reply_to(message, "Сообщение передано в GLPI.")
         bot.send_message(message.chat.id, "Отправь мне сообщение, которое нужно передать в GLPI или выбери действие:", reply_markup=keyboard)
+
+
+def get_computer_characteristics(message):
+    name = message.text
+    computer_data = glpi_deprecated.get_computer(name)
+    result = format_computer_data(computer_data)
+    bot.send_message(message.chat.id, result)
+    bot.send_message(message.chat.id, "Отправь мне сообщение, которое нужно передать в GLPI или выбери действие:", reply_markup=keyboard)
+
+
+def format_computer_data(computer_data):
+    if not computer_data:
+        return "Компьютер не найден."
+
+    formatted_data = f"Имя компьютера: {computer_data[0]['name']}\n"
+    for item in computer_data:
+        formatted_data += f"Контакт: {item['contact']}\n"
+        formatted_data += f"Комментарий: {item['comment']}\n"
+        formatted_data += f"ID: {item['id']}\n"
+
+    return formatted_data
 
 
 if __name__ == "__main__":
