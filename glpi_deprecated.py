@@ -100,27 +100,6 @@ def get_computer(name):
     headers = ['Position', 'id', 'name', 'contact', 'user_id', 'is_deleted', 'comment']
     print(tabulate(table, headers, tablefmt='grid'))
 
-#get_computer('pc-apx-004')
-
-# прототип для тестирования API
-def add_computer_to_glpi(glpi):
-    computer_name = 'pc-apx-004'
-
-    # Check if the computer already exists
-    # добавить в env.env маски имен
-    existing_computers = glpi_connect.get_all_items(itemtype='Computer', search={'contact': 'pc-vdi-110'}, range={"0-500"})
-    print(existing_computers)
-    if existing_computers:
-        # print(f"Computer '{computer_name}' already exists in GLPI.")
-        return
-
-    # Computer data
-    computer_data = {'name': computer_name, 'entities_id': 0}
-
-    # Add the computer to GLPI
-    glpi_connect.add('Computer', computer_data)
-    # print(f"Computer '{computer_name}' added to GLPI.")
-
 
 # проверяет, существует ли комп в glpi и добавляет его
 # возвращает id компа
@@ -177,4 +156,26 @@ def get_equipment(equipment_name, username):
     headers = ['Position', 'id', 'name', 'contact', 'user_id', 'is_deleted', 'comment']
     print(tabulate(table, headers, tablefmt='grid'))
 
-get_equipment('nb-apx-074', 'Anna.Tereshina')
+def check_equipment():
+    pass
+
+# привязывает оборудование к пользователю
+# через поля контактое лицо и Пользователь
+# link_equipment(glpi_equipment_type, username, equipment_name)
+def link_equipment(equipment_type, username, equipment_name, peripheral_type=None):
+    equipment_id = check_equipment(equipment_type, username, equipment_name, peripheral_type)
+    if equipment_id:
+        if equipment_type == 'Computer':
+            glpi_connect.update('Computer', {'id': equipment_id, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                             'users_id': get_user_id_by_username(username)})
+        elif equipment_type == 'Monitor':
+            glpi_connect.update('Monitor', {'id': equipment_id, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                            'users_id': get_user_id_by_username(username)})
+        elif equipment_type == 'Peripheral':
+            glpi_connect.update('Peripheral', {'id': equipment_id, 'contact': f"{username}" + os.getenv("DOMAIN"),
+                                               'users_id': get_user_id_by_username(username),
+                                               'peripheraltypes_id': peripheral_type})
+        else:
+            print(f"Invalid equipment type0: {equipment_type}")
+    else:
+        print(f"Equipment '{equipment_name}' not found in GLPI, when links!")
