@@ -5,9 +5,15 @@ from dotenv import load_dotenv
 
 load_dotenv('env.env')
 
-input_message_1 = os.getenv("INPUT_1")
+#input_message_1 = os.getenv("INPUT_1")
+input_message_1 = ''
 input_message_2 = os.getenv("INPUT_2")
 input = ''
+
+
+def capitalize_name(name):
+    capitalized_parts = [part.capitalize() for part in name.split(".")]
+    return ".".join(capitalized_parts)
 
 def parse_equipment_message(message_text):
     equipment_data = glpi.initialize_equipment_data()
@@ -34,7 +40,7 @@ def parse_equipment_message(message_text):
     username_start_index = message_text.find('"') + 1
     username_end_index = message_text.find('"', username_start_index)
     username = message_text[username_start_index:username_end_index]
-    equipment_data['username'] = username.strip()
+    equipment_data['username'] = capitalize_name(username.strip())
 
     if 'получил' in message_text or 'выдано' in message_text:
         equipment_data['type'] = 1
@@ -104,9 +110,9 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
     return equipment_data
 
-DEBUG = False
-if DEBUG:
-    Delete = True
+
+def go():
+    Delete = False
     # Парсинг сообщения
     parsed_equipment = parse_equipment_message(input_message_2 if Delete else input_message_1)
     username = parsed_equipment['username']

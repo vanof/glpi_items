@@ -24,8 +24,8 @@ def handle_start(message):
 def handle_message(message):
     input_message = message.text
 
-    message_handler.input = input_message
-
+    message_handler.input_message_1 = input_message
+    message_handler.go()
     bot.reply_to(message, "Сообщение передано в GLPI.")
     print(message_handler.input)
     bot.send_message(message.chat.id, "Отправь мне сообщение, которое нужно передать в GLPI или выбери действие:", reply_markup=keyboard)
