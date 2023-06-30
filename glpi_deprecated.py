@@ -156,8 +156,10 @@ def get_equipment(equipment_name, username):
     headers = ['Position', 'id', 'name', 'contact', 'user_id', 'is_deleted', 'comment']
     print(tabulate(table, headers, tablefmt='grid'))
 
+
 def check_equipment():
     pass
+
 
 # привязывает оборудование к пользователю
 # через поля контактое лицо и Пользователь

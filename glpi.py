@@ -141,7 +141,6 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type=No
                                                    is_deleted=True)
 
     if equipment:
-        # print(equipment)
         print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI - полное совпадение")
         return equipment[0]['id']
 
@@ -150,7 +149,6 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type=No
     deleted_equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"},
                                                    is_deleted=True)
     if equipment:
-        #print(equipment[0])
         for eq in equipment:
             if eq['users_id'] == get_user_id_by_username(username) and eq['contact'] == '':
                 print("Совпадение по users_id и пустому контакту")
@@ -193,7 +191,6 @@ def check_equipment_unlink(equipment_type, username, equipment_name, peripheral_
     for item in equipment:
         print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI.")
         return item['id']
-
 
 
 def unlink_equipment(equipment_type, username, equipment_name, peripheral_type=None):
