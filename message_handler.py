@@ -5,8 +5,6 @@ from dotenv import load_dotenv
 
 load_dotenv('env.env')
 
-DEBUG = os.getenv("DEBUG")
-
 input_message_1 = os.getenv("INPUT_1")
 input_message_2 = os.getenv("INPUT_2")
 input = ''
@@ -106,7 +104,7 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
     return equipment_data
 
-
+DEBUG = False
 if DEBUG:
     Delete = True
     # Парсинг сообщения
