@@ -53,7 +53,29 @@ def parse_equipment_message(message_text):
                 cleaned_matches = [f'{field} {match.strip()}' for match in matches]
             equipment_data[data_key] = cleaned_matches
 
+    if 'monitors' in equipment_data:
+        monitors = equipment_data['monitors']
+        equipment_data['monitors'] = [extract_monitor_brand(monitor) for monitor in monitors]
+
     return equipment_data
+
+
+# проверка для benq
+def extract_monitor_brand(equipment_name):
+    brand_match = re.search(r'Benq', equipment_name)
+    if brand_match:
+        brand_string = brand_match.group(0)
+        brand_string = brand_string[:-1] + brand_string[-1:].upper()
+
+        content_in_parentheses = re.search(r'\((.*?)\)', equipment_name)
+        if content_in_parentheses:
+            additional_info = content_in_parentheses.group(1)
+            additional_info = additional_info[:-2]
+            brand_string += ' ' + additional_info.strip()
+
+        return brand_string
+
+    return ''
 
 
 def compare_equipment_data(user_equipment, parsed_equipment):
@@ -84,7 +106,6 @@ def compare_equipment_data(user_equipment, parsed_equipment):
 
     return equipment_data
 
-input_message = ''
 
 if DEBUG:
     Delete = False
