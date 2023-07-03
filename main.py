@@ -13,9 +13,9 @@ load_dotenv('env.env')
 bot = telebot.TeleBot(os.getenv("BOT_ID"))
 
 keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-button1 = types.KeyboardButton("Сгенерировать QR")
-# button2 = types.KeyboardButton("Получить характеристики ПК")
-keyboard.add(button1)
+button1 = types.KeyboardButton("Получить характеристики ПК")
+button2 = types.KeyboardButton("Сгенерировать QR")
+keyboard.add(button1, button2)
 
 
 logging.basicConfig(
@@ -37,12 +37,12 @@ def handle_start(message):
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     if message.text == "Получить характеристики компьютера":
-        pass
+        bot.send_message(message.chat.id, "Введи имя компьютера:")
+        bot.register_next_step_handler(message, get_computer_characteristics)
 
     elif message.text == "Сгенерировать QR":
         bot.send_message(message.chat.id, "Вы выбрали генерацию QR")
-        bot.send_message(message.chat.id, "Введи имя компьютера:")
-        bot.register_next_step_handler(message, gen_qr)
+        bot.send_message(message.chat.id, "Отправь мне сообщение, которое нужно передать в GLPI или выбери действие:", reply_markup=keyboard)
 
     else:
         message_handler.message_handler(message.text)
@@ -50,7 +50,7 @@ def handle_message(message):
         bot.send_message(message.chat.id, "Отправь мне сообщение, которое нужно передать в GLPI или выбери действие:", reply_markup=keyboard)
 
 
-def gen_qr(message):
+def get_computer_characteristics(message):
     name = message.text
     computer_data = glpi_deprecated.get_computer(name)
     result = format_computer_data(computer_data)
