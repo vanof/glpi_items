@@ -37,6 +37,7 @@ def initialize_equipment_data():
         'external_cd': [],
         'ups': [],
         'usb': [],
+        'printers': [],
     }
 
 
@@ -74,9 +75,11 @@ def get_user_items(username):
         if user_id:
             equipment_data['username'] = username
 
-            all_computers = glpi_connect.get_all_items(itemtype="Computer", range={"0-1500"})
-            monitors = glpi_connect.get_all_items(itemtype="Monitor", range={"0-500"})
-            all_peripherals = glpi_connect.get_all_items(itemtype="Peripheral", range={"0-2500"})
+            search_params = {'users_id': get_user_id_by_username(username)}
+            all_computers = glpi_connect.get_all_items('Computer', searchText=search_params, range={"0-500"})
+            monitors = glpi_connect.get_all_items('Monitor', searchText=search_params, range={"0-500"})
+            all_peripherals = glpi_connect.get_all_items('Peripheral', searchText=search_params, range={"0-500"})
+            printers = glpi_connect.get_all_items('Printer', searchText=search_params, range={"0-500"})
 
             for computer in all_computers:
                 if computer['name'].startswith((os.getenv("PC_MASK"), os.getenv("NB_MASK"))) and computer['users_id'] == user_id:
@@ -86,13 +89,16 @@ def get_user_items(username):
                         equipment_data['laptops'].append(computer['name'])
 
             user_monitors = [monitor['name'] for monitor in monitors if monitor['users_id'] == user_id]
-            equipment_data['monitors'] = user_monitors
+            equipment_data['monitors']= user_monitors
 
             for peripheral in all_peripherals:
                 peripheraltypes_id = peripheral['peripheraltypes_id']
                 if peripheraltypes_id in peripheral_mapping and peripheral['users_id'] == user_id:
                     key = peripheral_mapping[peripheraltypes_id]
                     equipment_data[key].append(peripheral['name'])
+
+            user_printers = [printer['name'] for printer in printers if printer['users_id'] == user_id]
+            equipment_data['printers'] = user_printers
 
             if equipment_data:
                 response = f"User ID: {user_id}\n"
@@ -135,7 +141,7 @@ def add_equipment(equipment_type, username, equipment_name, peripheral_type):
 
 
 def check_equipment(equipment_type, username, equipment_name, peripheral_type=None):
-    if equipment_type not in ['Computer', 'Monitor', 'Peripheral']:
+    if equipment_type not in ['Computer', 'Monitor', 'Peripheral', 'Printer']:
         log_print(f"Invalid equipment type: {equipment_type}")
         return None
 
@@ -146,7 +152,7 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type=No
                                                    is_deleted=True)
 
     if equipment:
-        log_print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI - полное совпадение")
+        log_print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI - полное совпадение")  #нужно исключение для мониторов
         return equipment[0]['id']
 
     search_params = {'name': equipment_name}
@@ -186,7 +192,7 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type=No
 
 
 def check_equipment_unlink(equipment_type, username, equipment_name, peripheral_type):
-    if equipment_type not in ['Computer', 'Monitor', 'Peripheral']:
+    if equipment_type not in ['Computer', 'Monitor', 'Peripheral', 'Printer']:
         log_print(f"Invalid equipment type: {equipment_type}")
         return None
 
@@ -211,6 +217,9 @@ def unlink_equipment(equipment_type, username, equipment_name, peripheral_type=N
         elif equipment_type == 'Peripheral':
             glpi_connect.update('Peripheral', {'id': equipment_id, 'contact': '', 'users_id': '0',
                                                'comment': 'bot: откреплен от ' + username})
+        elif equipment_type == 'Printer':
+            glpi_connect.update('Printer', {'id': equipment_id, 'contact': '', 'users_id': '0',
+                                            'comment': 'bot: откреплен от ' + username})
         else:
             log_print(f"Invalid equipment type: {equipment_type}")
     else:
@@ -236,7 +245,8 @@ def update_equipment(missing_items):
         'external_hdd': 'Peripheral',
         'external_cd': 'Peripheral',
         'ups': 'Peripheral',
-        'usb': 'Peripheral'
+         'usb': 'Peripheral',
+         'printers': 'Printer'
     }
 
     peripheral_mapping = {

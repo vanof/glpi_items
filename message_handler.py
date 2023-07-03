@@ -39,9 +39,10 @@ def parse_equipment_message(message_text):
         'Клавиатура': ('keyboard', False),
         'Док-станция': ('dock_station', False),
         'Внешний диск': ('external_hdd', False),
-        'Внешний CD-ROM': ('external_cd', False),
+        'CD-ROM': ('external_cd', False),
         'ИБП': ('ups', False),
-        'USB концентратор': ('usb', False)
+        'USB концентратор': ('usb', False),
+        'Принтер': ('printers', False),
     }
 
     username_start_index = message_text.find('"') + 1
@@ -91,7 +92,6 @@ def extract_monitor_brand(equipment_name):
 
 def compare_equipment_data(user_equipment, parsed_equipment):
     equipment_data = glpi.initialize_equipment_data()
-
     missing_items = {}
 
     # Compare each item type in parsed_equipment
@@ -104,13 +104,26 @@ def compare_equipment_data(user_equipment, parsed_equipment):
             missing_items[item_type] = item_list
         else:
             user_items = user_equipment.get(item_type)
-            parsed_items = set(item_list) if item_list is not None else set()
+            parsed_items = item_list if item_list is not None else []
 
             if user_items is not None:
-                user_items = set(user_items)
-                missing = list(parsed_items - user_items)
+                missing = [item for item in parsed_items if item not in user_items]
                 if missing:
                     missing_items[item_type] = missing
+
+            if isinstance(parsed_items, list) and isinstance(user_items, list):
+                parsed_dict = {}
+                user_dict = {}
+                for item in parsed_items:
+                    parsed_dict[item] = parsed_dict.get(item, 0) + 1
+                for item in user_items:
+                    user_dict[item] = user_dict.get(item, 0) + 1
+
+                missing_items_list = [
+                    item for item, count in parsed_dict.items() if item not in user_dict or user_dict[item] < count
+                ]
+                if missing_items_list:
+                    missing_items[item_type] = missing_items_list
 
     equipment_data['username'] = user_equipment.get('username')
     equipment_data.update(missing_items)
@@ -132,24 +145,24 @@ def message_handler(input_message):
     log_print("У пользователя:")
     log_print(user_equipment)
 
-    if type == 0:
+    if type == None:
         # Удаление
         glpi.update_equipment(parsed_equipment)
 
         user_equipment = glpi.get_user_items(username)
         log_print("после удаления:")
-        #log_print(user_equipment)
+        log_print(user_equipment)
         log_print("==================================================================================================================================================================================")
     else:
         # Сравнение данных и вывод разницы
         missing_items = compare_equipment_data(user_equipment, parsed_equipment)
-        #log_print("не хватает:")
-        #log_print(missing_items)
+        log_print("не хватает:")
+        log_print(missing_items)
 
         # Обновление оборудования
-        #glpi.update_equipment(compare_equipment_data(user_equipment, parsed_equipment))
+        glpi.update_equipment(missing_items)
 
         user_equipment = glpi.get_user_items(username)
-       # log_print("после обновления:")
-        #log_print(user_equipment)
+        log_print("после обновления:")
+        log_print(user_equipment)
         log_print("==================================================================================================================================================================================")
