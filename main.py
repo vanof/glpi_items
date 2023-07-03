@@ -1,7 +1,5 @@
 import telebot
 import os
-
-import glpi_deprecated
 import message_handler
 import logging
 from dotenv import load_dotenv

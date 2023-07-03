@@ -138,18 +138,18 @@ def message_handler(input_message):
 
         user_equipment = glpi.get_user_items(username)
         log_print("после удаления:")
-        log_print(user_equipment)
+        #log_print(user_equipment)
         log_print("==================================================================================================================================================================================")
     else:
         # Сравнение данных и вывод разницы
         missing_items = compare_equipment_data(user_equipment, parsed_equipment)
-        log_print("не хватает:")
-        log_print(missing_items)
+        #log_print("не хватает:")
+        #log_print(missing_items)
 
         # Обновление оборудования
-        glpi.update_equipment(compare_equipment_data(user_equipment, parsed_equipment))
+        #glpi.update_equipment(compare_equipment_data(user_equipment, parsed_equipment))
 
         user_equipment = glpi.get_user_items(username)
-        log_print("после обновления:")
-        log_print(user_equipment)
+       # log_print("после обновления:")
+        #log_print(user_equipment)
         log_print("==================================================================================================================================================================================")
