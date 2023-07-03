@@ -103,12 +103,39 @@ def get_computer(name):
 
 
 def get_computer_info(id):
-    computer = glpi_connect.get_item('Computer', id, with_logs=True)
-    print(computer)
+    computer = glpi_connect.get_item('Computer', id, with_devices=True)
+    '''
+    computer_info = {
+        'ID': computer['id'],
+        'Name': computer['name'],
+        'Contact': computer['contact'],
+        'DeviceHardDrive': []
+    }
+    for key, value in computer.items():
+        if key == 'DeviceHardDrive':
+            computer_info[key].append(value)
+    '''
+    return computer
 
 
-get_computer_info(280)
+def remove_links(dictionary):
+    if 'links' in dictionary:
+        del dictionary['links']
 
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            remove_links(value)
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    remove_links(item)
+
+    return dictionary
+
+
+cm = get_computer_info(311)
+
+print(remove_links(cm))
 
 # проверяет, существует ли комп в glpi и добавляет его
 # возвращает id компа

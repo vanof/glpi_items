@@ -41,7 +41,8 @@ def parse_equipment_message(message_text):
         'Внешний диск': ('external_hdd', False),
         'Внешний CD-ROM': ('external_cd', False),
         'ИБП': ('ups', False),
-        'USB концентратор': ('usb', False)
+        'USB концентратор': ('usb', False),
+        'Принтер': ('printer', False)
     }
 
     username_start_index = message_text.find('"') + 1

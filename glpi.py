@@ -37,6 +37,7 @@ def initialize_equipment_data():
         'external_cd': [],
         'ups': [],
         'usb': [],
+        'printers': []
     }
 
 
@@ -77,6 +78,7 @@ def get_user_items(username):
             all_computers = glpi_connect.get_all_items(itemtype="Computer", range={"0-1500"})
             monitors = glpi_connect.get_all_items(itemtype="Monitor", range={"0-500"})
             all_peripherals = glpi_connect.get_all_items(itemtype="Peripheral", range={"0-2500"})
+            printers = glpi_connect.get_all_items(itemtype="Printer", range={"0-2500"})
 
             for computer in all_computers:
                 if computer['name'].startswith((os.getenv("PC_MASK"), os.getenv("NB_MASK"))) and computer['users_id'] == user_id:
@@ -93,6 +95,9 @@ def get_user_items(username):
                 if peripheraltypes_id in peripheral_mapping and peripheral['users_id'] == user_id:
                     key = peripheral_mapping[peripheraltypes_id]
                     equipment_data[key].append(peripheral['name'])
+
+            user_printers = [printer['name'] for printer in printers if printer['users_id'] == user_id]
+            equipment_data['printers'] = user_printers
 
             if equipment_data:
                 response = f"User ID: {user_id}\n"
@@ -135,7 +140,7 @@ def add_equipment(equipment_type, username, equipment_name, peripheral_type):
 
 
 def check_equipment(equipment_type, username, equipment_name, peripheral_type=None):
-    if equipment_type not in ['Computer', 'Monitor', 'Peripheral']:
+    if equipment_type not in ['Computer', 'Monitor', 'Peripheral', 'Printer']:
         log_print(f"Invalid equipment type: {equipment_type}")
         return None
 
@@ -186,7 +191,7 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type=No
 
 
 def check_equipment_unlink(equipment_type, username, equipment_name, peripheral_type):
-    if equipment_type not in ['Computer', 'Monitor', 'Peripheral']:
+    if equipment_type not in ['Computer', 'Monitor', 'Peripheral', 'Printer']:
         log_print(f"Invalid equipment type: {equipment_type}")
         return None
 
@@ -210,6 +215,9 @@ def unlink_equipment(equipment_type, username, equipment_name, peripheral_type=N
                                             'comment': 'bot: откреплен от ' + username})
         elif equipment_type == 'Peripheral':
             glpi_connect.update('Peripheral', {'id': equipment_id, 'contact': '', 'users_id': '0',
+                                               'comment': 'bot: откреплен от ' + username})
+        elif equipment_type == 'Printer':
+            glpi_connect.update('Printer', {'id': equipment_id, 'contact': '', 'users_id': '0',
                                                'comment': 'bot: откреплен от ' + username})
         else:
             log_print(f"Invalid equipment type: {equipment_type}")
@@ -236,7 +244,8 @@ def update_equipment(missing_items):
         'external_hdd': 'Peripheral',
         'external_cd': 'Peripheral',
         'ups': 'Peripheral',
-        'usb': 'Peripheral'
+        'usb': 'Peripheral',
+        'printer': 'Printer'
     }
 
     peripheral_mapping = {
