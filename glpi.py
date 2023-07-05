@@ -287,7 +287,7 @@ def update_equipment(missing_items):
             if equipment_type in equipment_types:
                 glpi_equipment_type = equipment_types[equipment_type]
                 for equipment_name in equipment_names:
-                    # если мониторов менше чем 2, а записи есть, то надо добаить монитор
+                    # если мониторов менше чем 2, а записи есть, то надо добавить монитор
                     if glpi_equipment_type == 'Peripheral':
                         peripheral_type = peripheral_mapping.get(equipment_type)
                         if peripheral_type is not None:

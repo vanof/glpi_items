@@ -3,12 +3,13 @@ import glpi
 import os
 import logging
 from dotenv import load_dotenv
+from deepdiff import DeepDiff
 
 load_dotenv('env.env')
 
 # для локального тестирования
-#input_message_1 = os.getenv("INPUT_1")
-#input_message_2 = os.getenv("INPUT_2")
+# input_message_1 = os.getenv("INPUT_1")
+# input_message_2 = os.getenv("INPUT_2")
 
 
 def log_print(*args, **kwargs):
@@ -87,49 +88,51 @@ def extract_monitor_brand(equipment_name):
 
         return brand_string
 
-    return ''
+    return equipment_name
+
+def sortr(dict):
+    for key in dict:
+        if isinstance(dict[key], list):
+            if all(isinstance(item, str) for item in dict[key]):
+                dict[key].sort()
+            else:
+                dict[key].sort(key=lambda x: str(x))
+    return dict
 
 
-def compare_equipment_data(user_equipment, parsed_equipment):
-    equipment_data = glpi.initialize_equipment_data()
-    missing_items = {}
+def compare_equipment_data(parsed_equipment, user_equipment):
+    missing_items = glpi.initialize_equipment_data()
+    missing_items['username'] = parsed_equipment['username']
+    missing_items['type'] = parsed_equipment['type']
+    # keys_to_skip = ['username', 'type']
+    diff = DeepDiff(sortr(parsed_equipment), sortr(user_equipment))
+    item_removed = diff.get('iterable_item_removed', {})
+    field_mapping = {
+        "root['headset']": 'headset',
+        "root['monitors']": 'monitors',
+        "root['pc']": 'pc',
+        "root['laptops']": 'laptops',
+        "root['bags']": 'bags',
+        "root['chargers']": 'chargers',
+        "root['web']": 'web',
+        "root['usb_key']": 'usb_key',
+        "root['mouse']": 'mouse',
+        "root['keyboard']": 'keyboard',
+        "root['dock_station']": 'dock_station',
+        "root['external_hdd']": 'external_hdd',
+        "root['external_cd']": 'external_cd',
+        "root['ups']": 'ups',
+        "root['usb']": 'usb',
+        "root['printers']": 'printers'
+    }
 
-    # Compare each item type in parsed_equipment
-    for item_type, item_list in parsed_equipment.items():
-        if isinstance(item_list, int):
-            if item_type == 'type':
-                equipment_data['type'] = item_list
-            continue  # Пропустить поле, если тип данных является int
-        if item_type not in user_equipment:
-            missing_items[item_type] = item_list
-        else:
-            user_items = user_equipment.get(item_type)
-            parsed_items = item_list if item_list is not None else []
+    for key, value in item_removed.items():
+        for prefix, field in field_mapping.items():
+            if key.startswith(prefix):
+                missing_items[field].append(value)
+                break
 
-            if user_items is not None:
-                missing = [item for item in parsed_items if item not in user_items]
-                if missing:
-                    missing_items[item_type] = missing
-
-            if isinstance(parsed_items, list) and isinstance(user_items, list):
-                parsed_dict = {}
-                user_dict = {}
-                for item in parsed_items:
-                    parsed_dict[item] = parsed_dict.get(item, 0) + 1
-                for item in user_items:
-                    user_dict[item] = user_dict.get(item, 0) + 1
-
-                missing_items_list = [
-                    item for item, count in parsed_dict.items() if item not in user_dict or user_dict[item] < count
-                ]
-                if missing_items_list:
-                    missing_items[item_type] = missing_items_list
-
-    equipment_data['username'] = user_equipment.get('username')
-    equipment_data.update(missing_items)
-
-    return equipment_data
-
+    return missing_items
 
 def message_handler(input_message):
     # Парсинг сообщения
@@ -155,7 +158,7 @@ def message_handler(input_message):
         log_print("==================================================================================================================================================================================")
     else:
         # Сравнение данных и вывод разницы
-        missing_items = compare_equipment_data(user_equipment, parsed_equipment)
+        missing_items = compare_equipment_data(parsed_equipment, user_equipment)
         log_print("не хватает:")
         log_print(missing_items)
 
