@@ -90,6 +90,7 @@ def extract_monitor_brand(equipment_name):
 
     return equipment_name
 
+
 def sortr(dict):
     for key in dict:
         if isinstance(dict[key], list):

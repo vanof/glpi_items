@@ -24,12 +24,12 @@ def initialize_equipment_data():
         'type': None,
         'pc': [],
         'laptops': [],
+        'monitors': [],
         'bags': [],
         'chargers': [],
         'web': [],
         'usb_key': [],
         'headset': [],
-        'monitors': [],
         'mouse': [],
         'keyboard': [],
         'dock_station': [],
@@ -147,16 +147,14 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type=No
         return None
 
     # 1) совпадение по имени, контакту и users_id
-    search_params = {'name': equipment_name, 'contact': username, 'users_id': get_user_id_by_username(username)}
-    equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"})
-    deleted_equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"},
-                                                   is_deleted=True)
+    #search_params = {'name': equipment_name, 'contact': username, 'users_id': get_user_id_by_username(username)}
+    #equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"})
+    #deleted_equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"}, is_deleted=True)
 
-    if equipment:
-        #if equipment_type == 'Monitor':
+    #if equipment:
 
-        log_print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI - полное совпадение")  #нужно исключение для мониторов
-        return equipment[0]['id']
+    #    log_print(f"{equipment_type} '{equipment_name}' already exists in user in GLPI - полное совпадение")  #нужно исключение для мониторов
+    #    return equipment[0]['id']
 
     search_params = {'name': equipment_name}
     equipment = glpi_connect.get_all_items(equipment_type, searchText=search_params, range={"0-1500"})
@@ -164,14 +162,16 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type=No
                                                    is_deleted=True)
     if equipment:
         for eq in equipment:
+
+            '''
             if eq['users_id'] == get_user_id_by_username(username) and eq['contact'] == '':
                 log_print("Совпадение по users_id и пустому контакту")
                 glpi_connect.update(equipment_type, {'id': eq['id'], 'contact': username, 'comment': 'bot: добавлен контакт'})
                 return eq['id']
-
+            '''
             if eq['users_id'] == 0 and (eq['contact'] == username or eq['contact'] == f"{username}{os.getenv('DOMAIN')}"):
                 glpi_connect.update(equipment_type, {'id': eq['id'], 'users_id': get_user_id_by_username(username), 'comment': 'bot: добавлен users_id' })
-                log_print("Совпадение по имени, пустому users_id и контакту")
+                log_print("Совпадение по имени, пустому users_id и точному контакту")
                 return eq['id']
 
             if eq['users_id'] == 0 and eq['contact'] == '':
@@ -182,18 +182,19 @@ def check_equipment(equipment_type, username, equipment_name, peripheral_type=No
             # проверить чужие записи
 
             if eq['users_id'] == 0 and eq['contact'] != '':
-                log_print("Совпадение по имени, чужому users_id и пустому контакту")
+                log_print("Совпадение по имени, пустому users_id и любому контакту")
                 glpi_connect.update(equipment_type,
                                     {'id': eq['id'], 'users_id': get_user_id_by_username(username), 'contact': username,
                                      'comment': 'bot: обновлен users_id и контакт'})
                 return eq['id']
-
-            if eq['users_id'] != 0 and eq['contact'] != '':
+            '''
+            if eq['users_id'] != get_user_id_by_username(username) and eq['contact'] != '':
                 log_print("Совпадение по имени, чужому users_id и пустому контакту")
                 glpi_connect.update(equipment_type,
                                     {'id': eq['id'], 'users_id': get_user_id_by_username(username), 'contact': username,
                                      'comment': 'bot: обновлен users_id и контакт, v2'})
                 return eq['id']
+            '''
     '''
     # временно отключено
     elif deleted_equipment:
@@ -294,6 +295,8 @@ def update_equipment(missing_items):
                             check_equipment(glpi_equipment_type, username, equipment_name, peripheral_type)
                         else:
                             log_print(f"Invalid peripheral type1: {equipment_name}")
+                    elif glpi_equipment_type == 'Monitors':
+                        log_print(f"Мониторы обрабатываются автоматически!")   #кроме случая если мониторов нет вообще
                     else:
                         check_equipment(glpi_equipment_type, username, equipment_name)
 
